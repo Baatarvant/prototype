@@ -1,0 +1,802 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CUCINA сонголтын prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --brand:#390007; --brand-2:#5a1018; --brand-tint:#f4eaea; --brand-ink:#ffffff;
+  --ground:#f4f1ef; --surface:#ffffff; --surface-2:#faf8f7;
+  --line:#e7e0dd; --line-2:#d6ccc8;
+  --ink:#1e1918; --muted:#6e6361; --faint:#7a6f6c;
+  --pop:#8a5d16; --pop-bg:#f7eedc; --ok:#256b45; --ok-bg:#e5f2ea; --err:#a3141f;
+  --r-sm:8px; --r:12px; --r-lg:18px;
+  --font:"Golos Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45}
+body{padding-inline:16px;padding-block:16px 40px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Prototype chrome */
+.proto-bar{max-width:1240px;margin:0 auto 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.proto-bar .t{display:flex;flex-direction:column;gap:2px}
+.proto-bar .t b{font-size:15px;font-weight:600}
+.proto-bar .t span{color:var(--muted);font-size:12.5px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.stage-wrap{display:flex;justify-content:center}
+.frame{position:relative;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.frame.tablet{width:100%;max-width:1240px;border-radius:var(--r-lg)}
+.frame.phone{width:390px;max-width:100%;height:min(820px,calc(100dvh - 120px));min-height:640px;border-radius:34px;border:10px solid #1e1918;box-shadow:0 20px 50px -20px rgba(57,0,7,.35)}
+
+/* Shared app parts */
+.app{display:flex;flex-direction:column;height:100%}
+.hdr{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.brand{font-weight:700;letter-spacing:.14em;font-size:15px;color:var(--brand)}
+.rooms{display:flex;gap:4px;margin-left:8px}
+.rooms button{padding:6px 12px;border-radius:999px;font-size:13px;color:var(--muted)}
+.rooms button[aria-current="true"]{background:var(--brand-tint);color:var(--brand);font-weight:600}
+.hdr .sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.btn.primary:hover{background:var(--brand-2)}
+.btn.ghost{border:1px solid var(--line-2);background:var(--surface)}
+.btn.ghost:hover{border-color:var(--brand)}
+.btn.sm{height:32px;padding:0 12px;font-size:12.5px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);min-height:36px}
+.toggle .sw{width:34px;height:20px;border-radius:999px;background:var(--line-2);position:relative;transition:background .15s;flex:none}
+.toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle[aria-pressed="true"] .sw{background:var(--brand)}
+.toggle[aria-pressed="true"] .sw::after{transform:translateX(14px)}
+.codechip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--brand-tint);color:var(--brand);font-size:12px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.codechip small{font-weight:500;letter-spacing:0;color:var(--brand-2);opacity:.8}
+
+.render{position:relative;aspect-ratio:3/2;max-width:100%;overflow:hidden;background:#e9e3de}
+.render img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.hl{position:absolute;inset:0;background:var(--brand);opacity:0;pointer-events:none;-webkit-mask-size:100% 100%;mask-size:100% 100%}
+.hl.on{animation:pulse 1.4s ease-out}
+@keyframes pulse{0%{opacity:0}20%{opacity:.45}100%{opacity:0}}
+.render .tap{position:absolute;inset:0;cursor:crosshair}
+
+.chips-zone{display:flex;gap:8px;flex-wrap:wrap}
+.zchip{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:12.5px;text-align:left}
+.zchip img{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
+.zchip b{font-weight:600}
+.zchip span{color:var(--muted)}
+.zchip[aria-pressed="true"]{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+
+.summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
+.price{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.len{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:999px;height:28px;background:var(--surface)}
+.len button{width:28px;height:26px;border-radius:999px;font-size:15px;color:var(--muted)}
+.len button:hover{color:var(--brand)}
+.len b{font-weight:600;font-size:12px;min-width:46px;text-align:center;font-variant-numeric:tabular-nums}
+.est{font-size:11.5px;color:var(--faint)}
+
+.eyebrow{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.styles{display:flex;gap:8px;flex-wrap:wrap}
+.styles button{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:500;white-space:nowrap}
+.styles button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+.preset{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);text-align:left;transition:border-color .15s}
+.preset:hover{border-color:var(--line-2)}
+.preset[aria-pressed="true"]{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.preset .render{border-bottom:1px solid var(--line)}
+.preset .meta{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.preset .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.preset .nm{font-weight:600;font-size:13.5px}
+.dots{display:flex}
+.dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line-2);margin-left:-4px;background-size:cover}
+.dots i:first-child{margin-left:0}
+.tier{font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.tier s{color:var(--line-2);text-decoration:none}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--pop-bg);color:var(--pop);white-space:nowrap}
+.preset .badge{position:absolute;top:8px;left:8px;z-index:2}
+
+.zones-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:4px}
+.zones-tabs button{padding:8px 6px;border-radius:9px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.zones-tabs button small{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.zones-tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(30,25,24,.12)}
+.fam{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.fam::-webkit-scrollbar{display:none}
+.fam button{flex:none;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;background:var(--surface)}
+.fam button i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.12)}
+.fam button em{font-style:normal;color:var(--faint);font-variant-numeric:tabular-nums}
+.fam button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.fam button[aria-pressed="true"] em{color:#cfc6c4}
+
+.swatches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.sw-card{display:flex;flex-direction:column;gap:6px;text-align:left;position:relative;min-width:0}
+.sw-card .tile{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.sw-card .tile img{width:100%;height:100%;object-fit:cover;display:block}
+.sw-card[aria-pressed="true"] .tile{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--brand)}
+.sw-card .chk{position:absolute;right:6px;bottom:6px;width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12px}
+.sw-card .pop{position:absolute;left:6px;top:6px;width:20px;height:20px;border-radius:50%;background:var(--pop-bg);color:var(--pop);display:grid;place-items:center;font-size:11px;font-weight:700}
+.sw-card .nm{font-size:12.5px;font-weight:600;line-height:1.25}
+.sw-card .en{font-size:11px;color:var(--faint);line-height:1.2;display:flex;justify-content:space-between;gap:4px}
+
+.variants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.vcard{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);display:flex;flex-direction:column;text-align:left;position:relative}
+.vcard.active{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.vcard .meta{padding:8px 10px;display:flex;align-items:center;gap:8px;min-width:0}
+.vcard .meta .tier{margin-left:auto}
+.vcard .meta b{font-size:13px}
+.vcard .meta span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.vcard .pick{position:absolute;top:8px;right:8px;z-index:2;width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.92);border:1px solid var(--line-2);display:grid;place-items:center;font-size:13px;color:var(--brand)}
+.vcard .pick[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.vcard .del{position:absolute;top:8px;left:8px;z-index:2;height:24px;padding:0 8px;border-radius:6px;background:rgba(255,255,255,.92);font-size:11.5px;color:var(--muted)}
+.vempty{border:1.5px dashed var(--line-2);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:120px;color:var(--muted);font-size:13px;background:var(--surface-2)}
+.vempty b{font-size:20px;color:var(--brand);font-weight:500}
+
+/* Tablet (showroom) layout */
+.tablet .body{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:24px;padding:20px}
+.tablet .left{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tablet .left .render.main{border-radius:var(--r-lg)}
+.tablet .panel{display:flex;flex-direction:column;gap:16px;min-width:0}
+.steps{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.steps button{padding:10px 4px 12px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px;justify-content:center}
+.steps button i{font-style:normal;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.steps button[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--brand)}
+.steps button[aria-selected="true"] i{background:var(--brand);border-color:var(--brand);color:#fff}
+.tablet .presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tablet .scroll{max-height:640px;overflow:auto;padding-right:4px;display:flex;flex-direction:column;gap:14px}
+.sect-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sect-h h2{font-size:16px;font-weight:600}
+.sect-h p{margin:0;color:var(--muted);font-size:12.5px}
+.next{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:var(--r);background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.contact{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px;color:var(--muted);font-size:12.5px}
+.contact b{color:var(--ink);user-select:all;font-variant-numeric:tabular-nums}
+
+/* Phone (customer link) layout */
+.phone .hdr{padding:12px 16px;gap:8px}
+.phone .rooms{display:none}
+.phone .stage{flex:none;position:relative}
+.phone .stage .chips-zone{position:absolute;left:10px;right:10px;bottom:10px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.phone .stage .zchip{flex:none;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);border-color:transparent}
+.phone .content{flex:1;overflow:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.phone .content>*{flex-shrink:0}
+.phone .ptabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.phone .ptabs button{padding:8px;border-radius:999px;font-size:13px;color:var(--muted);font-weight:500}
+.phone .ptabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(30,25,24,.12)}
+.hscroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px;scroll-snap-type:x mandatory}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll>*{flex:none;scroll-snap-align:start}
+.phone .styles{flex-wrap:nowrap}
+.phone .preset{width:168px}
+.phone .vcard{width:150px}
+.phone .vcard .pick{width:32px;height:32px}
+.phone .len{height:36px}
+.phone .len button{width:36px;height:34px}
+.phone .swatches{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.phone .sw-card .nm{font-size:11.5px}
+.phone .sw-card .en{display:none}
+.shared{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:var(--r);background:var(--brand-tint)}
+.shared p{margin:0;font-size:12.5px;color:var(--brand)}
+.shared p b{display:block;font-size:13.5px}
+.bar{flex:none;display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+.bar .btn.primary{flex:1}
+.bar .btn.ghost{padding:0 12px}
+
+/* Overlays */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(30,25,24,.5);display:grid;place-items:center;padding:16px}
+.phone .ov{position:absolute;place-items:end stretch;padding:0}
+.dlg{background:var(--surface);border-radius:var(--r-lg);width:min(560px,100%);max-height:calc(100dvh - 32px);overflow:auto;display:flex;flex-direction:column}
+.dlg.narrow{width:min(440px,100%)}
+.phone .dlg{border-radius:20px 20px 0 0;max-height:92%;width:100%}
+.dlg-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:3}
+.dlg-h h2{font-size:16px;font-weight:600}
+.x{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--muted)}
+.x:hover{background:var(--surface-2)}
+.dlg-b{padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.sum{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:var(--r)}
+.sum .render{width:120px;flex:none;border-radius:8px}
+.sum ul{list-style:none;margin:0;padding:0;font-size:12.5px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sum ul span{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.phone .grid2{grid-template-columns:1fr}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:12.5px;font-weight:500}
+.fld label em{font-style:normal;color:var(--faint);font-weight:400}
+.fld input,.fld select,.fld textarea{height:42px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);width:100%}
+.fld textarea{height:72px;padding:10px 12px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint)}
+.fld .err{font-size:12px;color:var(--err)}
+.fld.bad input{border-color:var(--err)}
+.intent{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.intent button{padding:10px 12px;border:1px solid var(--line-2);border-radius:10px;text-align:left;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.intent button small{color:var(--muted);font-size:11.5px}
+.intent button[aria-pressed="true"]{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand);background:var(--brand-tint)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:13px;cursor:pointer}
+.check input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+.check small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:28px 20px 32px}
+.done .ic{width:52px;height:52px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:24px}
+.done p{margin:0;color:var(--muted);max-width:40ch}
+.done b{user-select:all}
+
+.codebox{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--r);background:var(--brand-tint)}
+.codebox .lbl{font-size:12px;color:var(--brand)}
+.codebox .code{font-size:28px;font-weight:700;letter-spacing:.16em;color:var(--brand);font-variant-numeric:tabular-nums;user-select:all}
+.linkrow{display:flex;gap:8px}
+.linkrow input{flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface-2);font-size:12.5px;color:var(--muted)}
+.mini{display:flex;gap:8px;overflow-x:auto}
+.mini .render{width:120px;flex:none;border-radius:8px}
+.hint{margin:0;font-size:12.5px;color:var(--muted)}
+.codein{height:52px;font-size:22px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;text-align:center}
+.imgprev{display:block;width:100%;max-width:360px;margin:0 auto;border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 24px -12px rgba(0,0,0,.3)}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:sp 0.8s linear infinite;margin:40px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.cmp{background:var(--surface);border-radius:var(--r-lg);width:min(1080px,100%);overflow:hidden}
+.phone .cmp{border-radius:20px 20px 0 0;width:100%}
+.cmp .split{position:relative}
+.cmp .split .top{position:absolute;inset:0}
+.cmp .handle{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none}
+.cmp .handle::after{content:"⇆";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:15px;color:var(--brand);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.cmp .lbl{position:absolute;top:12px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.94);font-size:12px;font-weight:600;z-index:2;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp input[type=range]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0;z-index:3}
+.cmp .foot{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 20px}
+.cmp .foot>div{display:flex;flex-direction:column;gap:8px;font-size:12.5px;min-width:0}
+.cmp .foot ul{list-style:none;margin:0;padding:0;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(100% - 32px);text-align:center}
+.phone .toast{position:absolute;bottom:84px}
+
+/* Prototype tools (outside the app) */
+.tools{max-width:1240px;margin:16px auto 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.tool{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tool h3{font-size:13.5px;font-weight:600;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.tool h3 small{font-weight:400;color:var(--faint);font-size:12px}
+.feats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px}
+.feat{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;cursor:pointer}
+.feat input{accent-color:var(--brand);margin:2px 0 0;flex:none}
+.feat code{font-size:11px;color:var(--faint);display:block}
+.evlog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-height:120px}
+.evlog li{display:flex;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evlog li b{color:var(--brand);font-weight:600}
+.evlog li span{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.evlog .empty{color:var(--faint);font-family:var(--font)}
+
+/* Notes */
+.notes{max-width:1240px;margin:16px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.note h3{font-size:13.5px;font-weight:600}
+.note p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.5}
+.note .tag{align-self:flex-start;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+.tag.new{background:var(--ok-bg);color:var(--ok)}
+.tag.cut{background:#f6e3e3;color:#8e1a22}
+.tag.move{background:#eaeef5;color:#2f4d7a}
+.tag.data{background:var(--pop-bg);color:var(--pop)}
+
+@media (max-width:860px){
+  .tablet .body{grid-template-columns:1fr}
+  .tablet .rooms{display:none}
+  .tools{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  body{padding-inline:0;padding-block:0}
+  .proto-bar,.notes,.tools{padding-inline:16px}
+  .proto-bar .seg{display:none}
+  .frame.phone{width:100%;height:100dvh;min-height:0;border-radius:0;border:0;box-shadow:none}
+  .notes{margin-bottom:24px}
+  .feats{grid-template-columns:1fr}
+}
+</style>
+
+<div class="proto-bar">
+  <div class="t"><b>CUCINA · Гал тогооны сонголт</b><span>UX prototype v2 · 1, 2a, 2b үе шат · бодит рендер зургууд · жишээ өгөгдөл</span></div>
+  <div class="seg" role="group" aria-label="Төхөөрөмж">
+    <button id="dev-tablet" data-action="device" data-v="tablet" aria-pressed="true">Showroom · tablet</button>
+    <button id="dev-phone" data-action="device" data-v="phone" aria-pressed="false">Хэрэглэгчийн холбоос · утас</button>
+  </div>
+</div>
+<div class="stage-wrap"><div id="frame" class="frame tablet"></div></div>
+
+<section class="tools" aria-label="Prototype хэрэгслүүд">
+  <div class="tool">
+    <h3>Tenant тохиргоо <small>features.* · админ дээр JSON-оор</small></h3>
+    <div class="feats" id="feats"></div>
+  </div>
+  <div class="tool">
+    <h3>Хэмжилтийн үйлдлүүд <small>/events руу илгээгдэх</small></h3>
+    <ul class="evlog" id="evlog" aria-live="polite"></ul>
+  </div>
+</section>
+
+<section class="notes" aria-label="Өөрчлөлтийн тэмдэглэл">
+  <div class="note"><span class="tag new">1-р үе шат</span><h3>Хэв маяг → Бэлэн хослол (F1, F10)</h3><p>4 хэв маягийн 15 бэлэн хослолоос эхэлнэ. Нэг дарахад 3 хэсэг зэрэг солигдоно. Preset байхгүй tenant-д энэ алхам нуугдана: "Хэв маягийн алхам"-ыг унтрааж үзээрэй.</p></div>
+  <div class="note"><span class="tag new">2a үе шат</span><h3>Хуваалцах + төслийн код + зураг (F8, F12, F9)</h3><p>"Хуваалцах" дарахад 6 тэмдэгттэй код гарна. Кодыг showroom-д "Кодоор нээх"-ээр оруулбал хувилбарууд нээгдэнэ. Утасны жишээ код нь K7M2QX. Messenger-т илгээх зургийг мөн үүсгэнэ.</p></div>
+  <div class="note"><span class="tag new">2b үе шат</span><h3>Харьцуулах, дээж, үнийн хүрээ (F5, F6, F11)</h3><p>2 хувилбарыг гулсуулж харьцуулна. "Showroom-д ирэх" сонгоход дээж бэлдүүлэх сонголт гарна. Үнийн хүрээ = урт × 1 метрийн үнэ ± 20%. Метрийн үнэ нь жишээ.</p></div>
+  <div class="note"><span class="tag cut">Хассан</span><h3>Бүлэг, Гадаргуу шүүлтүүр, Өмнөх/дараах, код</h3><p>"Бүлэг" дотор ганц бүлэг, "Гадаргуу" дотор 2 утга байсан. Материалын кодыг нуусан. Өмнөх/дараах товчийг харьцуулалт орлосон. Өөрийн зургаа оруулах (AI) флоуг хассан.</p></div>
+  <div class="note"><span class="tag move">Хийгээгүй</span><h3>Ширээний тавцан (F4), асуулга (F3)</h3><p>Тавцангийн рендер давхарга одоогоор байхгүй (Q18), тиймээс 3-р үе шатыг prototype-д оруулаагүй. Асуулга нь өгөгдөл хуримтлагдсаны дараа хийх 4-р үе шат.</p></div>
+  <div class="note"><span class="tag data">Админ өгөгдөл</span><h3>Нэр, бүлэг, түвшин, хэсгийн материал</h3><p>Монгол нэр ноорог. Өнгөний бүлгийг зассан. ₮ түвшин таамаглал: өнгөт → ₮, мод → ₮₮, металл → ₮₮₮. Металлыг зөвхөн өндөр шүүгээнд зөвшөөрсөн.</p></div>
+</section>
+
+<script>
+const ZONES=[{id:'upper',name:'Дээд шүүгээ',short:'Дээд'},{id:'lower',name:'Доод шүүгээ',short:'Доод'},{id:'tall',name:'Өндөр шүүгээ',short:'Өндөр'}];
+const FAM={light:{n:'Цайвар',c:'#ece6dc'},wood:{n:'Мод',c:'#c9a576'},dark:{n:'Бараан',c:'#38383a'},color:{n:'Өнгөлөг',c:'#6f8f86'},metal:{n:'Металл',c:'#9a8f7c'}};
+// code, Mongolian name, family, tier(1-3), popular, matte
+const MAT=[
+ ['cream-white-sm','Цөцгий цагаан','light',1,1,1],['line-white','Зураасан цагаан','light',1,0,0],['almond-beige-sm','Бүйлсэн шаргал','light',1,0,1],
+ ['cashmere-beige-sm','Кашемир шаргал','light',1,1,1],['ivory-nude-sm','Зааны ясан','light',1,0,1],['oyster-grey-sm','Хясаан саарал','light',1,0,1],
+ ['creamic-sm','Керамик цайвар','light',1,0,1],['pearl-diamond','Сувдан саарал','light',1,0,0],['satin-beige','Торгон шаргал','light',1,0,0],
+ ['brown-diamond','Шороон саарал','light',1,0,0],['mocha-grey','Мокко саарал','dark',1,1,0],
+ ['natural-sonoma','Сонома царс','wood',2,1,0],['line-brown-sm','Зураасан бор','wood',2,0,1],['black-oak','Хар царс','wood',2,0,0],
+ ['basalt-sm','Базальт','dark',1,1,1],['peppercorn-sm','Перец хар','dark',1,0,1],['indigo-blue-sm','Шөнийн индиго','dark',1,0,1],
+ ['mist-green','Манан ногоон','color',1,0,0],['hunter-green-sm','Ойн ногоон','color',1,0,1],['navy-blue','Тэнгисийн цэнхэр','color',1,0,0],
+ ['toronto-burgundy','Бургунди','color',1,0,0],['lotus-pink','Бадам ягаан','color',1,0,0],['violet','Нил ягаан','color',1,0,0],
+ ['brash-gold','Гуулин алт','metal',3,0,0],['shiny-gold-brown','Алтан бор','metal',3,0,0],['stainless-bronze','Хүрэл','metal',3,0,0],
+ ['stainless-steel','Зэвэрдэггүй ган','metal',3,0,0],['brush-grey','Зүлгэсэн саарал','metal',3,0,0]
+].map(([code,mn,fam,tier,pop,matte])=>({code,mn,fam,tier,pop:!!pop,matte:!!matte,en:code.replace(/-sm$/,'').replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}));
+const M=Object.fromEntries(MAT.map(m=>[m.code,m]));
+const ALLOWED={upper:MAT.filter(m=>m.fam!=='metal'),lower:MAT.filter(m=>m.fam!=='metal'),tall:MAT};
+const STYLES=[
+ {id:'light',n:'Цайвар минимал',d:'Гэрэлтэй, цэвэрхэн, жижиг өрөөнд тохиромжтой',p:[
+  ['Цэвэр цагаан','cream-white-sm','cream-white-sm','cream-white-sm',1],
+  ['Мокко ба цөцгий','mocha-grey','cream-white-sm','cream-white-sm',1],
+  ['Зөөлөн шаргал','cashmere-beige-sm','almond-beige-sm','cream-white-sm',0],
+  ['Сувдан','pearl-diamond','oyster-grey-sm','pearl-diamond',0]]},
+ {id:'wood',n:'Модлог дулаан',d:'Байгалийн модон хээ, дулаан уур амьсгал',p:[
+  ['Сонома ба цагаан','cream-white-sm','natural-sonoma','natural-sonoma',1],
+  ['Сонома мокко','mocha-grey','cream-white-sm','natural-sonoma',0],
+  ['Зураасан бор','ivory-nude-sm','line-brown-sm','line-brown-sm',0]]},
+ {id:'dark',n:'Бараан контраст',d:'Цайвар дээд, бараан доод: гүнзгий, орчин үеийн',p:[
+  ['Базальт контраст','cream-white-sm','basalt-sm','basalt-sm',1],
+  ['Хар царс','ivory-nude-sm','black-oak','black-oak',0],
+  ['Шөнийн индиго','satin-beige','indigo-blue-sm','indigo-blue-sm',0],
+  ['Перец ба мод','natural-sonoma','peppercorn-sm','peppercorn-sm',0]]},
+ {id:'color',n:'Өнгөлөг',d:'Нэг тод өнгийг цайвартай хослуулсан',p:[
+  ['Манан ногоон','mist-green','cream-white-sm','cream-white-sm',0],
+  ['Ойн ногоон','cream-white-sm','hunter-green-sm','natural-sonoma',0],
+  ['Тэнгис','cream-white-sm','navy-blue','cream-white-sm',0],
+  ['Бургунди','almond-beige-sm','toronto-burgundy','almond-beige-sm',0]]}
+].map(s=>({...s,p:s.p.map(([n,u,l,t,pop],i)=>({id:s.id+i,n,sel:{upper:u,lower:l,tall:t},pop:!!pop}))}));
+const PRESETS=Object.fromEntries(STYLES.flatMap(s=>s.p.map(p=>[p.id,{...p,style:s.id}])));
+const LETTERS=['A','B','C'];
+const PHONE='7713 3399';
+// Example tenant data: price per running metre for each tier, in million ₮ (F11)
+const PRICE_PER_M={1:2.4,2:3.1,3:4.2};
+const LEN_MIN=1.5,LEN_MAX=8,LEN_STEP=0.5;
+// Shareable project codes (F12): no 0/O/1/I so codes survive being read aloud
+const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const DEMO_CODE='K7M2QX', DEMO_VARIANTS=[PRESETS.light1.sel,PRESETS.wood0.sel,PRESETS.dark0.sel];
+const PROJECTS={[DEMO_CODE]:DEMO_VARIANTS.map(sel=>({...sel}))};
+const FEATURES=[
+ ['styleStep','Хэв маягийн алхам','F1 · preset байхгүй бол унтарна'],
+ ['popularBadge','"Түгээмэл" шошго','ажилтан тэмдэглэнэ'],
+ ['priceTier','Үнийн түвшин ₮/₮₮/₮₮₮','material.tier'],
+ ['priceRange','Үнийн хүрээ','F11 · pricePerMeter'],
+ ['variants','Хувилбар + харьцуулах','F5, F8'],
+ ['visitBooking','Showroom цаг + дээж','F6 · lead.intent']
+];
+
+const img=(z,c)=>`img/${z}/${c}.webp`, tile=c=>`img/tile/${c}.webp`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tierOf=sel=>Math.max(...ZONES.map(z=>M[sel[z.id]].tier));
+const same=(a,b)=>ZONES.every(z=>a[z.id]===b[z.id]);
+const presetOf=sel=>Object.values(PRESETS).find(p=>same(p.sel,sel));
+const nameOf=sel=>{const p=presetOf(sel);return p?p.n:'Өөрийн хослол'};
+const fmtM=n=>n.toFixed(1).replace(/\.0$/,'');
+const fmtLen=n=>fmtM(n)+' м';
+const todayISO=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const distinctMats=sel=>[...new Set(ZONES.map(z=>sel[z.id]))].map(c=>M[c]);
+function priceRange(sel,len){const base=len*PRICE_PER_M[tierOf(sel)];return [base*0.8,base*1.2]}
+function genCode(){let c='';do{c='';for(let i=0;i<6;i++)c+=CODE_ALPHABET[Math.floor(Math.random()*CODE_ALPHABET.length)]}while(PROJECTS[c]);return c}
+
+const S={device:'tablet',advanced:true,step:'style',ptab:'style',styleId:'light',
+  sel:{upper:'mocha-grey',lower:'cream-white-sm',tall:'cream-white-sm'},zone:'upper',fam:'all',
+  variants:[{sel:{...PRESETS.light1.sel}},{sel:{...PRESETS.wood0.sel}}],picks:[0,1],
+  code:null,len:3,lenSet:false,
+  feat:Object.fromEntries(FEATURES.map(([k])=>[k,true])),
+  overlay:null,quote:{intent:'quote',sent:false,errors:{},samples:true},codeErr:null,imgURL:null,toast:null,events:[]};
+
+const tierHTML=t=>S.feat.priceTier?`<span class="tier" title="Үнийн түвшин" role="img" aria-label="Үнийн түвшин ${t}/3"><span aria-hidden="true">${'₮'.repeat(t)}<s>${'₮'.repeat(3-t)}</s></span></span>`:'';
+const styleOn=()=>S.feat.styleStep&&STYLES.length>0;
+function priceHTML(sel){
+  if(!S.feat.priceRange) return '';
+  const [lo,hi]=priceRange(sel,S.len);
+  return `<span class="price" title="Урьдчилсан үнэ. Нарийн үнийг үнийн санал дээр өгнө.">≈ ${fmtM(lo)}–${fmtM(hi)} сая ₮</span>`;
+}
+function lenHTML(){
+  if(!S.feat.priceRange) return '';
+  return `<span class="len" role="group" aria-label="Гал тогооны урт"><button data-action="len" data-v="-1" aria-label="Богиносгох">−</button><b>${fmtLen(S.len)}</b><button data-action="len" data-v="1" aria-label="Уртасгах">+</button></span>${S.lenSet?'':'<span class="est">жишээ урт</span>'}`;
+}
+
+/* Measurement (phase 0): every event the real app would send to /events */
+let evN=0;
+function track(name,data={}){
+  S.events.unshift({n:++evN,name,data});S.events.length=Math.min(S.events.length,9);
+  renderLog();
+}
+function renderLog(){
+  const el=document.getElementById('evlog');
+  el.innerHTML=S.events.length?S.events.map(e=>`<li><b>${esc(e.name)}</b><span>${esc(Object.entries(e.data).map(([k,v])=>k+'='+v).join(' '))}</span></li>`).join(''):'<li class="empty">Апп дээр дарахад үйлдлүүд энд харагдана.</li>';
+}
+function renderFeats(){
+  document.getElementById('feats').innerHTML=FEATURES.map(([k,n,c])=>`<label class="feat"><input type="checkbox" id="f-${k}" data-feat="${k}" ${S.feat[k]?'checked':''}><span>${n}<code>${c}</code></span></label>`).join('');
+}
+
+function renderHTML(sel,cls=''){
+  return `<div class="render ${cls}"><img src="img/base.webp" alt="" loading="lazy">${ZONES.map(z=>`<img src="${img(z.id,sel[z.id])}" alt="" loading="lazy">`).join('')}</div>`;
+}
+function dots(sel){return `<span class="dots">${ZONES.map(z=>`<i style="background-image:url(${tile(sel[z.id])})" title="${esc(z.short)}: ${esc(M[sel[z.id]].mn)}"></i>`).join('')}</span>`}
+
+/* Persistent main stage so layers don't reload on every render */
+const stageEl=document.createElement('div');
+stageEl.className='render main';
+stageEl.innerHTML=`<img src="img/base.webp" alt="Гал тогооны рендер">`+ZONES.map(z=>`<img data-z="${z.id}" alt="">`).join('')
+ +ZONES.map(z=>`<div class="hl" data-hl="${z.id}" style="-webkit-mask-image:url(${img(z.id,'cream-white-sm')});mask-image:url(${img(z.id,'cream-white-sm')})"></div>`).join('')
+ +`<div class="tap" data-action="tap" aria-hidden="true"></div>`;
+function updateStage(){
+  ZONES.forEach(z=>{
+    const el=stageEl.querySelector(`img[data-z="${z.id}"]`), src=img(z.id,S.sel[z.id]);
+    if(el.getAttribute('src')===src) return;
+    const pre=new Image(); pre.src=src;
+    (pre.decode?pre.decode():Promise.resolve()).catch(()=>{}).then(()=>{ if(img(z.id,S.sel[z.id])===src) el.setAttribute('src',src) });
+  });
+}
+function flash(zone){
+  const el=stageEl.querySelector(`[data-hl="${zone}"]`); if(!el) return;
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+}
+/* Hit-test zones from the layer alpha */
+const hit={};
+ZONES.forEach(z=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=192;c.height=128;const x=c.getContext('2d');x.drawImage(im,0,0,192,128);try{hit[z.id]=x.getImageData(0,0,192,128).data}catch(e){}};im.src=img(z.id,'cream-white-sm')});
+function zoneAt(ev){
+  const r=stageEl.getBoundingClientRect(), x=Math.floor((ev.clientX-r.left)/r.width*192), y=Math.floor((ev.clientY-r.top)/r.height*128);
+  if(x<0||y<0||x>=192||y>=128) return null;
+  for(const z of ['tall','upper','lower']){const d=hit[z]; if(d&&d[(y*192+x)*4+3]>40) return z}
+  return null;
+}
+
+function zoneChips(){
+  const refining=S.step==='refine'||S.ptab==='color'||!styleOn();
+  return `<div class="chips-zone" role="group" aria-label="Хэсгүүд">${ZONES.map(z=>{const m=M[S.sel[z.id]];
+    return `<button class="zchip" data-action="zone" data-v="${z.id}" aria-pressed="${S.zone===z.id&&refining}"><img src="${tile(m.code)}" alt=""><span><b>${z.short}</b> · <span>${esc(m.mn)}</span></span></button>`}).join('')}</div>`;
+}
+function styleChips(){
+  return `<div class="styles ${S.device==='phone'?'hscroll':''}" role="group" aria-label="Хэв маяг">${STYLES.map(s=>`<button data-action="style" data-v="${s.id}" aria-pressed="${S.styleId===s.id}">${s.n}</button>`).join('')}</div>`;
+}
+function presetCards(){
+  const st=STYLES.find(s=>s.id===S.styleId);
+  return st.p.map(p=>`<button class="preset" data-action="preset" data-v="${p.id}" aria-pressed="${same(p.sel,S.sel)}">
+    <div style="position:relative">${p.pop&&S.feat.popularBadge?'<span class="badge">★ Түгээмэл</span>':''}${renderHTML(p.sel)}</div>
+    <div class="meta"><div class="row"><span class="nm">${esc(p.n)}</span>${tierHTML(tierOf(p.sel))}</div>${dots(p.sel)}</div></button>`).join('');
+}
+function famChips(list){
+  const fams=Object.keys(FAM).filter(f=>list.some(m=>m.fam===f));
+  return `<div class="fam" role="group" aria-label="Өнгөний бүлэг"><button data-action="fam" data-v="all" aria-pressed="${S.fam==='all'}">Бүгд <em>${list.length}</em></button>${fams.map(f=>`<button data-action="fam" data-v="${f}" aria-pressed="${S.fam===f}"><i style="background:${FAM[f].c}"></i>${FAM[f].n} <em>${list.filter(m=>m.fam===f).length}</em></button>`).join('')}</div>`;
+}
+function swatchGrid(){
+  const list=ALLOWED[S.zone]; let shown=S.fam==='all'?list:list.filter(m=>m.fam===S.fam);
+  if(S.feat.popularBadge) shown=[...shown].sort((a,b)=>b.pop-a.pop);
+  return famChips(list)+`<div class="swatches" data-keep="sw">${shown.map(m=>`<button class="sw-card" data-action="mat" data-v="${m.code}" aria-pressed="${S.sel[S.zone]===m.code}" title="${esc(m.mn)} · ${esc(m.en)}">
+    <span class="tile"><img src="${tile(m.code)}" alt="" loading="lazy">${m.pop&&S.feat.popularBadge?'<span class="pop" title="Түгээмэл">★</span>':''}${S.sel[S.zone]===m.code?'<span class="chk">✓</span>':''}</span>
+    <span class="nm">${esc(m.mn)}</span><span class="en"><span>${esc(m.en)}${m.matte?' · Матт':''}</span>${tierHTML(m.tier)}</span></button>`).join('')}</div>`;
+}
+function zoneTabs(){
+  return `<div class="zones-tabs" role="tablist" aria-label="Хэсэг">${ZONES.map(z=>`<button role="tab" data-action="zone" data-v="${z.id}" aria-selected="${S.zone===z.id}"><span>${z.name}</span><small>${esc(M[S.sel[z.id]].mn)}</small></button>`).join('')}</div>`;
+}
+function variantCards(withEmpty){
+  const cards=S.variants.map((v,i)=>{const active=same(v.sel,S.sel);return `<div class="vcard ${active?'active':''}">
+    ${S.advanced?`<button class="pick" data-action="pick" data-v="${i}" aria-pressed="${S.picks.includes(i)}" aria-label="${LETTERS[i]} хувилбарыг харьцуулахаар сонгох">${S.picks.includes(i)?'✓':''}</button>`:''}
+    ${S.device==='tablet'||S.advanced?`<button class="del" data-action="del" data-v="${i}" aria-label="${LETTERS[i]} хувилбарыг устгах">Устгах</button>`:''}
+    <button data-action="loadv" data-v="${i}" style="text-align:left">${renderHTML(v.sel)}<div class="meta"><b>${LETTERS[i]}</b><span>${esc(nameOf(v.sel))}</span>${tierHTML(tierOf(v.sel))}</div></button></div>`}).join('');
+  const empty=withEmpty&&S.variants.length<3?`<button class="vempty" data-action="save"><b>+</b>Одоогийн хослолыг хадгалах<small style="color:var(--faint)">${S.variants.length}/3</small></button>`:'';
+  return cards+empty;
+}
+function codeChip(){return S.code?`<span class="codechip" title="Төслийн код"><small>Төсөл</small>${S.code}</span>`:''}
+
+function renderTablet(){
+  const st=STYLES.find(s=>s.id===S.styleId);
+  const step=styleOn()?S.step:'refine';
+  const variantsOn=S.advanced&&S.feat.variants;
+  return `<div class="app tablet">
+  <header class="hdr"><span class="brand">CUCINA</span>
+    <nav class="rooms" aria-label="Өрөө"><button aria-current="true">Гал тогоо</button><button data-action="room">TV өрөө</button><button data-action="room">Унтлагын өрөө</button></nav>
+    <span class="sp"></span>${codeChip()}
+    ${S.advanced?'<button class="btn ghost sm" data-action="opencode">Кодоор нээх</button>':''}
+    <button class="toggle" data-action="adv" aria-pressed="${S.advanced}"><span class="sw"></span>Дэлгэрэнгүй</button>
+    <button class="btn ghost" data-action="share">Хуваалцах</button>
+    <button class="btn primary" data-action="quote" data-src="header">Үнийн санал авах</button></header>
+  <div class="body">
+    <div class="left">
+      <div id="stage-slot"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">${zoneChips()}
+        <span class="summary">${esc(nameOf(S.sel))} ${tierHTML(tierOf(S.sel))} ${priceHTML(S.sel)} ${lenHTML()}</span></div>
+      ${variantsOn?`<section style="display:flex;flex-direction:column;gap:10px">
+        <div class="sect-h"><h2>Хувилбарууд</h2><span style="display:flex;gap:8px;align-items:center"><p>2-ыг сонгоод харьцуулна</p>
+        <button class="btn ghost sm" data-action="compare" ${S.picks.length===2?'':'disabled'}>Харьцуулах</button></span></div>
+        <div class="variants">${variantCards(true)}</div></section>`:''}
+    </div>
+    <aside class="panel">
+      ${styleOn()?`<div class="steps" role="tablist"><button role="tab" data-action="step" data-v="style" aria-selected="${step==='style'}"><i>1</i>Хэв маяг</button><button role="tab" data-action="step" data-v="refine" aria-selected="${step==='refine'}"><i>2</i>Нарийвчлах</button></div>`
+        :`<div class="sect-h"><h2>Материалаа сонгох</h2><p>Хэсгээ сонгоод өнгөө туршаарай</p></div>`}
+      <div class="scroll" data-keep="panel">
+      ${step==='style'?`
+        ${styleChips()}
+        <p style="margin:0;color:var(--muted);font-size:12.5px">${esc(st.d)}</p>
+        <div class="presets">${presetCards()}</div>
+        <div class="next"><span>Таалагдсан хослолоо хэсэг тус бүрээр нь өөрчилж болно.</span><button class="btn ghost sm" data-action="step" data-v="refine">Нарийвчлах →</button></div>`
+      :`${zoneTabs()}${swatchGrid()}`}
+      </div>
+      <div class="contact"><span>Зөвлөгөө авах: <b>${PHONE}</b></span>${S.feat.popularBadge?'<span>★ = Түгээмэл</span>':''}</div>
+    </aside>
+  </div></div>`;
+}
+
+function renderPhone(){
+  const showStyle=styleOn();
+  const ptab=showStyle?S.ptab:'color';
+  const variantsOn=S.feat.variants&&S.variants.length>0;
+  return `<div class="app phone">
+  <header class="hdr"><span class="brand">CUCINA</span><span class="sp"></span>${codeChip()}
+    <button class="toggle" data-action="adv" aria-pressed="${S.advanced}" aria-label="Дэлгэрэнгүй горим"><span class="sw"></span>Дэлгэрэнгүй</button></header>
+  <div class="stage"><div id="stage-slot"></div>${zoneChips()}</div>
+  <div class="content" data-keep="content">
+    ${S.feat.priceRange?`<div class="summary">${priceHTML(S.sel)} ${lenHTML()}</div>`:''}
+    ${variantsOn?`<section class="shared"><p><b>Showroom-д танд бэлдсэн ${S.variants.length} хувилбар</b>Нэгийг нь сонгоод өөрчилж эсвэл шууд үнийн санал аваарай.</p>
+      <div class="hscroll" style="margin-inline:-12px;padding-inline:12px">${variantCards(false)}</div>
+      ${S.advanced?`<button class="btn ghost sm" data-action="compare" ${S.picks.length===2?'':'disabled'} style="align-self:flex-start">Сонгосон 2-ыг харьцуулах</button>`:''}</section>`:''}
+    ${showStyle?`<div class="ptabs" role="tablist"><button role="tab" data-action="ptab" data-v="style" aria-selected="${ptab==='style'}">Бэлэн хослол</button><button role="tab" data-action="ptab" data-v="color" aria-selected="${ptab==='color'}">Өнгө солих</button></div>`:''}
+    ${ptab==='style'?`${styleChips()}<div class="hscroll">${presetCards()}</div>`
+      :`${zoneTabs()}${swatchGrid()}`}
+  </div>
+  <div class="bar">${S.advanced&&S.feat.variants?`<button class="btn ghost" data-action="save">Хадгалах</button>`:''}<button class="btn ghost" data-action="share">Хуваалцах</button><button class="btn primary" data-action="quote" data-src="bar">Үнийн санал авах</button></div>
+  </div>`;
+}
+
+function renderQuote(){
+  const q=S.quote, e=q.errors, sel=S.sel, visit=S.feat.visitBooking&&q.intent==='visit';
+  if(q.sent) return `<div class="ov" data-action="closeov"><div class="dlg" role="dialog" aria-modal="true" aria-label="Хүсэлт илгээгдлээ">
+    <div class="done"><div class="ic">✓</div><h2 style="font-size:18px">Хүсэлтийг хүлээн авлаа</h2>
+    <p>${q.sentVisit?`${esc(q.date||'Сонгосон өдөр')}, ${esc(q.slot||'')} цагт таныг хүлээж байна. Цагийг баталгаажуулахаар`:'Үнийн саналаа бэлдээд'} ажлын 1 өдрийн дотор <b>${esc(q.phone)}</b> дугаарт холбогдоно.</p>
+    ${q.sentVisit&&q.sentSamples?`<p>Showroom-д дээжийг бэлдэж тавина: ${distinctMats(sel).map(m=>esc(m.mn)).join(', ')}.</p>`:''}
+    <p>Хүсэлтэд "${esc(nameOf(sel))}" хослол хадгалагдсан${S.code?`. Төслийн код: <b>${S.code}</b>`:''}.</p>
+    <p>Яаралтай бол: <b>${PHONE}</b></p><button class="btn primary" data-action="closeov">Болсон</button></div></div></div>`;
+  return `<div class="ov" data-action="closeov"><form class="dlg" role="dialog" aria-modal="true" aria-labelledby="qt" novalidate id="quote-form">
+   <div class="dlg-h"><h2 id="qt">${visit?'Showroom-д ирэх цаг товлох':'Үнийн санал авах'}</h2><button type="button" class="x" data-action="closeov" aria-label="Хаах">×</button></div>
+   <div class="dlg-b">
+    <div class="sum">${renderHTML(sel)}<ul><li><b>${esc(nameOf(sel))}</b> ${tierHTML(tierOf(sel))}</li>${ZONES.map(z=>`<li><span>${z.short}:</span> ${esc(M[sel[z.id]].mn)}</li>`).join('')}${S.feat.priceRange?`<li>${priceHTML(sel)} <span>· ${fmtLen(S.len)}</span></li>`:''}</ul></div>
+    ${S.feat.visitBooking?`<div class="intent" role="group" aria-label="Хүсэлтийн төрөл">
+      <button type="button" data-action="intent" data-v="quote" aria-pressed="${q.intent==='quote'}"><b>Үнийн санал</b><small>Утсаар тооцоо илгээнэ</small></button>
+      <button type="button" data-action="intent" data-v="visit" aria-pressed="${q.intent==='visit'}"><b>Showroom-д ирэх</b><small>Дээжийг биечлэн үзнэ</small></button></div>`:''}
+    <div class="grid2">
+      <div class="fld ${e.phone?'bad':''}"><label for="q-phone">Утасны дугаар</label><input id="q-phone" name="phone" inputmode="numeric" maxlength="9" placeholder="9911 2233" autocomplete="tel" value="${esc(q.phone||'')}">${e.phone?`<span class="err">${e.phone}</span>`:''}</div>
+      <div class="fld"><label for="q-name">Нэр <em>(заавал биш)</em></label><input id="q-name" name="name" autocomplete="name" value="${esc(q.name||'')}"></div>
+      ${visit?`<div class="fld ${e.date?'bad':''}"><label for="q-date">Ирэх өдөр</label><input id="q-date" name="date" type="date" min="${todayISO()}" value="${esc(q.date||'')}">${e.date?`<span class="err">${e.date}</span>`:''}</div>
+      <div class="fld"><label for="q-slot">Цаг</label><select id="q-slot" name="slot">${['10:00–13:00','13:00–16:00','16:00–19:00'].map(s=>`<option ${q.slot===s?'selected':''}>${s}</option>`).join('')}</select></div>`:''}
+      <div class="fld"><label for="q-len">Гал тогооны урт, м <em>(заавал биш)</em></label><input id="q-len" name="len" type="number" inputmode="decimal" min="${LEN_MIN}" max="${LEN_MAX}" step="0.1" placeholder="ж: 3.2" value="${S.lenSet?S.len:''}"></div>
+      <div class="fld"><label for="q-when">Хэзээ хийлгэх</label><select id="q-when" name="when">${['1 сарын дотор','1–3 сар','3+ сар','Мэдэхгүй байна'].map(s=>`<option ${q.when===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+    ${visit?`<label class="check" for="q-samples"><input type="checkbox" id="q-samples" name="samples" ${q.samples?'checked':''}><span>Сонгосон материалуудын дээжийг бэлдэж өгнө үү<small>${distinctMats(sel).map(m=>esc(m.mn)).join(' · ')}</small></span></label>`:''}
+    <div class="fld"><label for="q-note">Тайлбар <em>(заавал биш)</em></label><textarea id="q-note" name="note" placeholder="Байр, дүүрэг, хүсэлт…">${esc(q.note||'')}</textarea></div>
+    <button class="btn primary" type="submit" style="height:46px">${visit?'Цаг товлох':'Үнийн санал авах'}</button>
+    <p style="margin:0;font-size:12px;color:var(--muted);text-align:center">Prototype: хүсэлт хаашаа ч илгээгдэхгүй.</p>
+   </div></form></div>`;
+}
+function renderCompare(){
+  const [a,b]=S.picks.map(i=>S.variants[i]);
+  return `<div class="ov" data-action="closeov"><div class="cmp" role="dialog" aria-modal="true" aria-label="Харьцуулах">
+   <div class="dlg-h"><h2>${LETTERS[S.picks[0]]} ба ${LETTERS[S.picks[1]]} харьцуулах</h2><button class="x" data-action="closeov" aria-label="Хаах">×</button></div>
+   <div class="split" id="split">${renderHTML(b.sel)}<div class="top" id="split-top" style="clip-path:inset(0 50% 0 0)">${renderHTML(a.sel)}</div>
+     <span class="lbl" style="left:12px">${LETTERS[S.picks[0]]} · ${esc(nameOf(a.sel))}</span><span class="lbl" style="right:12px">${LETTERS[S.picks[1]]} · ${esc(nameOf(b.sel))}</span>
+     <span class="handle" id="split-h" style="left:50%"></span><input type="range" id="split-r" min="0" max="100" value="50" aria-label="Харьцуулах шугам"></div>
+   <div class="foot">${[a,b].map((v,k)=>`<div><b>${LETTERS[S.picks[k]]} · ${esc(nameOf(v.sel))} ${tierHTML(tierOf(v.sel))}</b>${S.feat.priceRange?`<span>${priceHTML(v.sel)}</span>`:''}<ul>${ZONES.map(z=>`<li>${z.short}: ${esc(M[v.sel[z.id]].mn)}</li>`).join('')}</ul><button class="btn ghost sm" data-action="loadv" data-v="${S.picks[k]}" style="align-self:flex-start">Энийг сонгох</button></div>`).join('')}</div>
+  </div></div>`;
+}
+function shareURL(){return 'https://fc-api-production.astrella-v2.workers.dev/p/'+S.code}
+function renderShare(){
+  const list=S.feat.variants&&S.variants.length?S.variants.map(v=>v.sel):[S.sel];
+  return `<div class="ov" data-action="closeov"><div class="dlg narrow" role="dialog" aria-modal="true" aria-labelledby="sh">
+   <div class="dlg-h"><h2 id="sh">Хуваалцах</h2><button class="x" data-action="closeov" aria-label="Хаах">×</button></div>
+   <div class="dlg-b">
+    <div class="codebox"><div><div class="lbl">Төслийн код</div><div class="code">${S.code}</div></div><button class="btn ghost sm" data-action="copy" data-v="code">Хуулах</button></div>
+    <p class="hint">Кодоо showroom-д эсвэл утсаар хэлэхэд борлуулагч таны ${list.length>1?list.length+' хувилбарыг':'хослолыг'} шууд нээнэ.</p>
+    ${S.feat.variants&&S.variants.length&&!S.variants.some(v=>same(v.sel,S.sel))?`<div class="check" style="cursor:default;flex-direction:column;gap:8px"><span>Одоогийн өөрчилсөн хослол хуваалцахад ороогүй байна. 3 хувилбар дүүрсэн тул нэгийг нь солино уу.</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap">${S.variants.map((v,i)=>`<button class="btn ghost sm" data-action="replacev" data-v="${i}">${LETTERS[i]}-г солих</button>`).join('')}</span></div>`:''}
+    <div class="mini">${list.map(sel=>renderHTML(sel)).join('')}</div>
+    <div class="linkrow"><input id="share-link" readonly value="${shareURL()}" aria-label="Холбоос"><button class="btn ghost sm" data-action="copy" data-v="link" style="height:40px">Холбоос хуулах</button></div>
+    <button class="btn primary" data-action="makeimg" style="height:44px">Messenger-т илгээх зураг үүсгэх</button>
+   </div></div></div>`;
+}
+function renderImage(){
+  return `<div class="ov" data-action="closeov"><div class="dlg narrow" role="dialog" aria-modal="true" aria-labelledby="im">
+   <div class="dlg-h"><h2 id="im">Илгээх зураг</h2><button class="x" data-action="closeov" aria-label="Хаах">×</button></div>
+   <div class="dlg-b">${S.imgURL?`<img class="imgprev" src="${S.imgURL}" alt="Гал тогооны хослол, материалууд, төслийн код бүхий зураг">
+    <p class="hint">Утсан дээр зураг дээр удаан дарж хадгална. Жинхэнэ app-д "Зураг хадгалах" товч шууд татаж авна.</p>`:'<div class="spin" role="status" aria-label="Зураг үүсгэж байна"></div>'}
+   </div></div></div>`;
+}
+function renderCodeDlg(){
+  return `<div class="ov" data-action="closeov"><form class="dlg narrow" role="dialog" aria-modal="true" aria-labelledby="cd" id="code-form" novalidate>
+   <div class="dlg-h"><h2 id="cd">Кодоор нээх</h2><button type="button" class="x" data-action="closeov" aria-label="Хаах">×</button></div>
+   <div class="dlg-b">
+    <p class="hint">Хэрэглэгчийн хэлсэн 6 тэмдэгттэй төслийн кодыг оруулна уу. Жишээ: K7M2QX</p>
+    <div class="fld ${S.codeErr?'bad':''}"><label for="code-in">Төслийн код</label><input id="code-in" name="code" class="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false">${S.codeErr?`<span class="err">${S.codeErr}</span>`:''}</div>
+    <button class="btn primary" type="submit" style="height:44px">Нээх</button>
+   </div></form></div>`;
+}
+
+const frame=document.getElementById('frame');
+let shownOverlay=null, openerKey=null, lastClicked=null;
+// A stable selector for the focused control, so focus survives the innerHTML rebuild
+function focusKey(el){
+  if(!el||!frame.contains(el)) return null;
+  if(el.id) return '#'+CSS.escape(el.id);
+  if(el.dataset.action) return `[data-action="${el.dataset.action}"]`+(el.dataset.v!=null?`[data-v="${CSS.escape(el.dataset.v)}"]`:'');
+  return null;
+}
+function render(){
+  const keep={};frame.querySelectorAll('[data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
+  const focused=focusKey(document.activeElement), codeVal=frame.querySelector('#code-in')?.value;
+  frame.className='frame '+S.device;
+  const ov={quote:renderQuote,compare:renderCompare,share:renderShare,image:renderImage,code:renderCodeDlg}[S.overlay];
+  frame.innerHTML=(S.device==='tablet'?renderTablet():renderPhone())+(ov?ov():'')
+    +(S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:'');
+  frame.querySelector('#stage-slot').replaceWith(stageEl);
+  frame.querySelectorAll('[data-keep]').forEach(el=>{if(keep[el.dataset.keep]) el.scrollTop=keep[el.dataset.keep]});
+  document.querySelectorAll('[data-action="device"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.device));
+  updateStage();
+  const r=frame.querySelector('#split-r'); if(r) r.addEventListener('input',()=>{frame.querySelector('#split-top').style.clipPath=`inset(0 ${100-r.value}% 0 0)`;frame.querySelector('#split-h').style.left=r.value+'%'});
+  const ci=frame.querySelector('#code-in');
+  if(ci){if(codeVal)ci.value=codeVal;ci.addEventListener('input',()=>{ci.value=ci.value.toUpperCase().replace(/[^A-Z0-9]/g,'')})}
+  // Modal behaviour: everything behind an open dialog is inert; focus moves in on open and back to the opener on close
+  const open=!!S.overlay;
+  frame.querySelector('.app').inert=open;
+  document.querySelectorAll('.proto-bar,.tools,.notes').forEach(el=>el.inert=open);
+  let target=null;
+  if(open&&S.overlay!==shownOverlay){
+    if(!shownOverlay) openerKey=lastClicked||focused;
+    const dlg=frame.querySelector('.ov [role="dialog"]');
+    target=dlg&&(dlg.querySelector('input:not([type=hidden]):not([readonly]),select,textarea')||dlg.querySelector('button:not(.x)')||dlg.querySelector('.x'));
+  }else if(!open&&shownOverlay){target=openerKey&&frame.querySelector(openerKey);openerKey=null}
+  else if(focused){target=frame.querySelector(focused)}
+  shownOverlay=S.overlay;
+  target?.focus({preventScroll:true});
+}
+let toastT;
+function toast(msg){S.toast=msg;clearTimeout(toastT);toastT=setTimeout(()=>{S.toast=null;frame.querySelector('.toast')?.remove()},2400)}
+
+/* F12: the code always points at the current set of variants */
+function ensureCode(){
+  if(!S.code) S.code=genCode();
+  PROJECTS[S.code]=(S.feat.variants&&S.variants.length?S.variants.map(v=>v.sel):[S.sel]).map(sel=>({...sel}));
+}
+
+/* F9: compose one shareable image on a canvas */
+const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+async function composeImage(){
+  const W=1080,H=1440,P=64,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  try{await document.fonts.load('600 40px "Golos Text"');await document.fonts.load('700 40px "Golos Text"')}catch(e){}
+  const F=(w,s)=>`${w} ${s}px "Golos Text", "Segoe UI", system-ui, sans-serif`;
+  x.fillStyle='#faf8f7';x.fillRect(0,0,W,H);
+  const layers=await Promise.all(['img/base.webp',...ZONES.map(z=>img(z.id,S.sel[z.id]))].map(loadImg));
+  layers.forEach(l=>x.drawImage(l,0,0,W,720));
+  x.fillStyle='#390007';x.font=F(700,28);x.letterSpacing='4px';x.fillText('CUCINA',P,790);x.letterSpacing='0px';
+  x.fillStyle='#1e1918';x.font=F(600,52);x.fillText(nameOf(S.sel),P,860);
+  let meta=[];if(S.feat.priceTier) meta.push('₮'.repeat(tierOf(S.sel))+' түвшин');
+  if(S.feat.priceRange){const [lo,hi]=priceRange(S.sel,S.len);meta.push(`≈ ${fmtM(lo)}–${fmtM(hi)} сая ₮ · ${fmtLen(S.len)}`)}
+  x.fillStyle='#6e6361';x.font=F(500,30);if(meta.length) x.fillText(meta.join('  ·  '),P,908);
+  const tiles=await Promise.all(ZONES.map(z=>loadImg(tile(S.sel[z.id]))));
+  ZONES.forEach((z,i)=>{
+    const y=960+i*92;
+    x.save();x.beginPath();x.arc(P+32,y+32,32,0,Math.PI*2);x.clip();x.drawImage(tiles[i],P,y,64,64);x.restore();
+    x.strokeStyle='#d6ccc8';x.lineWidth=2;x.beginPath();x.arc(P+32,y+32,32,0,Math.PI*2);x.stroke();
+    x.fillStyle='#9a8f8c';x.font=F(500,26);x.fillText(z.name,P+92,y+24);
+    x.fillStyle='#1e1918';x.font=F(600,32);x.fillText(M[S.sel[z.id]].mn,P+92,y+60);
+  });
+  const by=1250;x.fillStyle='#f4eaea';
+  if(x.roundRect){x.beginPath();x.roundRect(P,by,W-2*P,130,20);x.fill()}else x.fillRect(P,by,W-2*P,130);
+  x.fillStyle='#5a1018';x.font=F(500,24);x.fillText('Төслийн код',P+32,by+44);
+  x.fillStyle='#390007';x.font=F(700,56);x.letterSpacing='8px';x.fillText(S.code,P+32,by+104);x.letterSpacing='0px';
+  x.textAlign='right';x.fillStyle='#5a1018';x.font=F(500,24);x.fillText('Showroom-д кодоо хэлээрэй',W-P-32,by+44);
+  x.fillStyle='#1e1918';x.font=F(600,36);x.fillText(PHONE,W-P-32,by+100);x.textAlign='left';
+  return c.toDataURL('image/jpeg',0.88);
+}
+
+async function copyText(text,okMsg,what){
+  try{await navigator.clipboard.writeText(text);toast(okMsg);render()}
+  catch(e){
+    toast('Хуулж чадсангүй. Тэмдэглэгдсэн текстийг гараар хуулна уу');render();
+    // Select after rendering, otherwise the rebuild throws the selection away
+    if(what==='code'){const el=frame.querySelector('.codebox .code');if(el){const r=document.createRange();r.selectNodeContents(el);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}}
+    else{const el=frame.querySelector('#share-link');if(el){el.focus();el.select()}}
+  }
+}
+
+function setDevice(v){
+  S.device=v;S.advanced=v==='tablet';S.overlay=null;S.fam='all';
+  if(v==='phone'){S.code=DEMO_CODE;PROJECTS[DEMO_CODE]=DEMO_VARIANTS.map(sel=>({...sel}));S.variants=DEMO_VARIANTS.map(sel=>({sel:{...sel}}));S.sel={...S.variants[0].sel}}
+  else{S.code=null;S.variants=[{sel:{...PRESETS.light1.sel}},{sel:{...PRESETS.wood0.sel}}];S.sel={upper:'mocha-grey',lower:'cream-white-sm',tall:'cream-white-sm'}}
+  S.picks=S.variants.length>1?[0,1]:[];
+}
+
+const A={
+  adv:()=>{S.advanced=!S.advanced},
+  step:v=>{S.step=v;if(v==='refine')flash(S.zone)},
+  ptab:v=>{S.ptab=v;if(v==='color')flash(S.zone)},
+  style:v=>{S.styleId=v;track('style_select',{style:v})},
+  preset:v=>{S.sel={...PRESETS[v].sel};track('preset_select',{preset:v,style:PRESETS[v].style})},
+  zone:(v,ev,t)=>{S.zone=v;S.fam='all';if(S.device==='tablet')S.step='refine';else S.ptab='color';setTimeout(()=>flash(v));track('zone_select',{zone:v,source:t&&t.dataset.action==='tap'?'image':'tab'})},
+  fam:v=>{S.fam=v;track('filter_change',{family:v})},
+  mat:v=>{S.sel={...S.sel,[S.zone]:v};track('material_select',{zone:S.zone,material:v})},
+  len:v=>{S.len=Math.min(LEN_MAX,Math.max(LEN_MIN,S.len+(+v)*LEN_STEP));S.lenSet=true;track('len_change',{len:S.len})},
+  save:()=>{
+    if(S.variants.some(x=>same(x.sel,S.sel)))return toast('Энэ хослол аль хэдийн хадгалагдсан');
+    if(S.variants.length>=3)return toast('3 хувилбар дүүрсэн. Нэгийг устгаад дахин хадгална уу');
+    S.variants.push({sel:{...S.sel}});if(S.code)ensureCode();
+    track('variant_save',{count:S.variants.length});toast(`Хувилбар ${LETTERS[S.variants.length-1]} хадгалагдлаа`)},
+  del:v=>{S.variants.splice(+v,1);S.picks=S.picks.filter(i=>i!==+v).map(i=>i>+v?i-1:i);if(S.code)ensureCode()},
+  loadv:v=>{S.sel={...S.variants[+v].sel};S.overlay=null},
+  pick:v=>{v=+v;if(S.picks.includes(v))S.picks=S.picks.filter(i=>i!==v);else S.picks=[...S.picks.slice(-1),v]},
+  compare:()=>{if(S.picks.length===2&&S.picks.every(i=>S.variants[i])){S.overlay='compare';track('compare_open',{a:LETTERS[S.picks[0]],b:LETTERS[S.picks[1]]})}},
+  quote:(v,ev,t)=>{S.overlay='quote';S.quote={...S.quote,sent:false,errors:{}};if(!S.feat.visitBooking)S.quote.intent='quote';track('quote_open',{source:t?.dataset.src||'other'})},
+  intent:v=>{readForm();S.quote.intent=v},
+  closeov:()=>{readForm();S.overlay=null;S.codeErr=null},
+  room:()=>toast('Prototype-д зөвхөн гал тогоо. Бусад өрөө ижил загварыг ашиглана'),
+  share:()=>{
+    // An unsaved edit must travel with the link, or the person receiving it sees the old version
+    if(S.feat.variants&&!S.variants.some(v=>same(v.sel,S.sel))&&S.variants.length<3){
+      S.variants.push({sel:{...S.sel}});toast(`Таны өөрчилсөн хослол хувилбар ${LETTERS[S.variants.length-1]} болж нэмэгдлээ`);
+    }
+    ensureCode();S.overlay='share';track('share_click',{code:S.code,variants:PROJECTS[S.code].length})},
+  replacev:v=>{S.variants[+v]={sel:{...S.sel}};ensureCode();toast(`Хувилбар ${LETTERS[+v]}-г одоогийн хослолоор солилоо`)},
+  copy:v=>{copyText(v==='code'?S.code:shareURL(),v==='code'?`${S.code} код хуулагдлаа`:'Холбоос хуулагдлаа',v);return false},
+  makeimg:()=>{S.overlay='image';S.imgURL=null;track('image_create',{code:S.code});
+    composeImage().then(u=>{S.imgURL=u;if(S.overlay==='image')render()}).catch(()=>{S.overlay=null;toast('Зураг үүсгэж чадсангүй. Дахин оролдоно уу');render()})},
+  opencode:()=>{S.overlay='code';S.codeErr=null},
+  tap:(v,ev,t)=>{const z=zoneAt(ev);if(z)A.zone(z,ev,t);else return false}
+};
+function readForm(){
+  const f=frame.querySelector('#quote-form');if(!f)return;
+  ['phone','name','date','slot','when','note'].forEach(k=>{if(f[k])S.quote[k]=f[k].value.trim()});
+  if(f.samples)S.quote.samples=f.samples.checked;
+  const l=parseFloat((f.len?.value||'').replace(',','.'));
+  if(!isNaN(l)){S.len=Math.min(LEN_MAX,Math.max(LEN_MIN,l));S.lenSet=true}
+}
+frame.addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-action]');
+  if(!t)return;
+  if(t.classList.contains('ov')&&ev.target!==t)return; // clicks inside a dialog don't close it
+  const fn=A[t.dataset.action]; if(!fn)return;
+  ev.preventDefault();
+  lastClicked=focusKey(t);
+  if(fn(t.dataset.v,ev,t)!==false) render();
+});
+frame.addEventListener('submit',ev=>{
+  ev.preventDefault();
+  if(ev.target.id==='code-form'){
+    const c=(ev.target.code.value||'').toUpperCase().trim();
+    if(!PROJECTS[c]){S.codeErr=c.length<6?'6 тэмдэгт оруулна уу':'Ийм код олдсонгүй. Үсгээ шалгаад дахин оролдоно уу';render();return}
+    S.code=c;S.variants=PROJECTS[c].map(sel=>({sel:{...sel}}));S.sel={...S.variants[0].sel};S.picks=S.variants.length>1?[0,1]:[];
+    S.overlay=null;S.codeErr=null;track('code_open',{code:c,variants:S.variants.length});toast(`${c} нээгдлээ · ${S.variants.length} хувилбар`);render();return;
+  }
+  readForm();const q=S.quote,ph=(q.phone||'').replace(/\s/g,''),visit=S.feat.visitBooking&&q.intent==='visit';
+  const errs={};
+  if(!/^[0-9]{8}$/.test(ph)) errs.phone='8 оронтой дугаар оруулна уу, ж: 99112233';
+  if(visit&&!q.date) errs.date='Ирэх өдрөө сонгоно уу';
+  else if(visit&&q.date<todayISO()) errs.date='Өнгөрсөн өдөр сонгох боломжгүй';
+  if(Object.keys(errs).length){q.errors=errs;render();frame.querySelector(errs.phone?'#q-phone':'#q-date')?.focus();return}
+  q.phone=ph.replace(/(\d{4})(\d{4})/,'$1 $2');q.errors={};q.sent=true;q.sentVisit=visit;q.sentSamples=visit&&q.samples;
+  track('quote_submit',Object.assign({intent:visit?'visit':'quote',code:S.code||'-',len:S.lenSet?S.len:'-',materials:ZONES.map(z=>z.id+':'+S.sel[z.id]).join(',')},visit?{visitDate:q.date,visitSlot:q.slot,prepareSamples:q.samples?'yes':'no'}:{}));render();
+});
+document.querySelector('.proto-bar').addEventListener('click',ev=>{const t=ev.target.closest('[data-action="device"]');if(t){setDevice(t.dataset.v);track('viewer_open',{device:t.dataset.v,referrer:t.dataset.v==='phone'?'shared_link':'direct'});render()}});
+document.getElementById('feats').addEventListener('change',ev=>{const k=ev.target.dataset.feat;if(!k)return;readForm();S.feat[k]=ev.target.checked;
+  if(!S.feat.visitBooking)S.quote.intent='quote';if(!S.feat.variants&&S.overlay==='compare')S.overlay=null;render()});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&S.overlay){readForm();S.overlay=null;S.codeErr=null;render()}});
+
+const startPhone=matchMedia('(max-width:560px)').matches||location.hash==='#phone';
+setDevice(startPhone?'phone':'tablet');
+renderFeats();
+track('viewer_open',{device:S.device,referrer:startPhone?'shared_link':'direct'});
+render();
+</script>
